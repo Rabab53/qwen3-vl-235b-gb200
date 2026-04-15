@@ -47,6 +47,7 @@
     <img id="image-preview" class="image-preview">
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
     let currentImageBase64 = null;
 
@@ -58,7 +59,7 @@
                 const img = document.getElementById('image-preview');
                 img.src = e.target.result;
                 img.style.display = 'block';
-                currentImageBase64 = e.target.result.split(',')[1]; // Extract base64 part
+                currentImageBase64 = e.target.result.split(',')[1];
             }
             reader.readAsDataURL(file);
         }
@@ -88,11 +89,9 @@
         chatContainer.appendChild(userDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
 
-        // Reset input
         input.value = '';
         document.getElementById('image-preview').style.display = 'none';
-        
-        // Show loader
+
         loader.style.display = 'block';
         sendBtn.style.display = 'none';
 
@@ -106,9 +105,10 @@
             const data = await response.json();
             const aiDiv = document.createElement('div');
             aiDiv.className = 'message ai-message';
-            
+
             if (data.status === 'success') {
-                aiDiv.textContent = data.answer;
+                // Use marked to render the response as HTML
+                aiDiv.innerHTML = marked.parse(data.answer);
             } else {
                 aiDiv.textContent = "Error: " + data.message;
                 aiDiv.style.color = 'red';
@@ -123,7 +123,6 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
-
     // Enter key to send
     document.getElementById('user-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
