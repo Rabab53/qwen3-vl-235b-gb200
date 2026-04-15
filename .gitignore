@@ -1,0 +1,14 @@
+Qwen3-VL-235B/
+qwen3-vl-env/
+.*
+!README.md
+!DEPLOYMENT_PROGRESS.md
+!download_model.py
+!install_vllm.slurm
+!serve_qwen3.slurm
+!.gitignore
+*.log
+slurm-*.out
+download.log
+nohup.out
+.DS_Store
