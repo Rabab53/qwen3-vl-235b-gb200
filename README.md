@@ -61,6 +61,27 @@ sbatch serve_qwen3.slurm
 - `--gpu-memory-utilization 0.95`: Allocates 95% of HBM3e for weights and KV cache.
 - `--trust-remote-code`: Required for Qwen3-VL MoE architecture.
 
+## 🌐 Web Interface
+
+A modern, responsive web interface is included in the `web_app/` directory. It supports real-time chat and image uploads.
+
+### Running the Web App
+1. **Activate the environment:**
+   ```bash
+   source qwen3-vl-env/bin/activate
+   ```
+2. **Start the Flask server:**
+   ```bash
+   python3 web_app/app.py
+   ```
+3. **Access the interface:**
+   - The app runs on port `5000` of the login node.
+   - Use an SSH tunnel to access it locally:
+     ```bash
+     ssh -L 5000:localhost:5000 <user>@<login_node_ip>
+     ```
+   - Open your browser to `http://localhost:5000`.
+
 ## 🤖 Inference Examples
 
 ### Using the Python Client (`query_qwen3.py`)
