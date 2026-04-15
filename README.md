@@ -63,6 +63,13 @@ sbatch serve_qwen3.slurm
 
 ## 🤖 Inference Examples
 
+### Using the Python Client (`query_qwen3.py`)
+A clean, modular Python example is provided in the repository to demonstrate text and vision capabilities.
+```bash
+source qwen3-vl-env/bin/activate
+python3 query_qwen3.py
+```
+
 ### Text + Image Query (Vision)
 ```bash
 curl http://<node_ip>:8000/v1/chat/completions \
