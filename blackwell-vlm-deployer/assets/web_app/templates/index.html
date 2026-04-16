@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen3-VL Blackwell Interface</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        .header { background-color: #343541; color: white; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chat-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .message { padding: 15px; border-radius: 10px; max-width: 80%; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .user-message { background-color: #e0f0ff; align-self: flex-end; }
+        .ai-message { background-color: white; align-self: flex-start; border: 1px solid #ddd; }
+        .input-area { background-color: white; padding: 20px; border-top: 1px solid #ddd; display: flex; gap: 10px; align-items: center; }
+        textarea { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; resize: none; height: 50px; outline: none; transition: border-color 0.3s; }
+        textarea:focus { border-color: #007bff; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.3s; font-weight: bold; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .image-preview { max-width: 150px; border-radius: 5px; margin-top: 10px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #file-input { display: none; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 2s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Qwen3-VL 235B on GB200</h1>
+    <p>Advanced Vision-Language Interface</p>
+</div>
+
+<div class="chat-container" id="chat-container">
+    <div class="message ai-message">Hello! I am the Qwen3-VL model running on NVIDIA Blackwell GPUs. How can I assist you with text or images today?</div>
+</div>
+
+<div class="input-area">
+    <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">📁 Upload Image</button>
+    <input type="file" id="file-input" accept="image/*" onchange="previewImage(event)">
+    <textarea id="user-input" placeholder="Type your message here..."></textarea>
+    <div class="loader" id="loader"></div>
+    <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">Send</button>
+</div>
+
+<div style="padding: 0 20px 20px 20px; background-color: white;">
+    <img id="image-preview" class="image-preview">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    let currentImageBase64 = null;
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('image-preview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                currentImageBase64 = e.target.result.split(',')[1];
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('user-input');
+        const text = input.value.trim();
+        const chatContainer = document.getElementById('chat-container');
+        const loader = document.getElementById('loader');
+        const sendBtn = document.getElementById('send-btn');
+
+        if (!text && !currentImageBase64) return;
+
+        // Add user message to UI
+        const userDiv = document.createElement('div');
+        userDiv.className = 'message user-message';
+        userDiv.textContent = text;
+        if (currentImageBase64) {
+            const img = document.createElement('img');
+            img.src = document.getElementById('image-preview').src;
+            img.style.maxWidth = '100px';
+            img.style.display = 'block';
+            img.style.marginTop = '10px';
+            userDiv.appendChild(img);
+        }
+        chatContainer.appendChild(userDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        input.value = '';
+        document.getElementById('image-preview').style.display = 'none';
+
+        loader.style.display = 'block';
+        sendBtn.style.display = 'none';
+
+        try {
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, image: currentImageBase64 })
+            });
+
+            const data = await response.json();
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'message ai-message';
+
+            if (data.status === 'success') {
+                // Use marked to render the response as HTML
+                aiDiv.innerHTML = marked.parse(data.answer);
+            } else {
+                aiDiv.textContent = "Error: " + data.message;
+                aiDiv.style.color = 'red';
+            }
+            chatContainer.appendChild(aiDiv);
+        } catch (error) {
+            console.error("Error sending message:", error);
+        } finally {
+            currentImageBase64 = null;
+            loader.style.display = 'none';
+            sendBtn.style.display = 'block';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+    // Enter key to send
+    document.getElementById('user-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>

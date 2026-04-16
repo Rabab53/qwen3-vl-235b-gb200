@@ -1,0 +1,43 @@
+# Gemini CLI Chat History - March 4, 2026
+# Project: 1T MoE Fine-Tuning on 24x B200 GPUs
+
+## 1. Initial Python Setup
+- Provided code for loading image datasets using PyTorch (ImageFolder), TensorFlow (image_dataset_from_directory), and PIL/NumPy.
+
+## 2. Infrastructure Setup (Login Node: x24b200v4-login-001)
+- Installed/Updated `screen` (v4.9.0) and confirmed `tmux` (v3.2a) availability.
+- Established a persistent tmux session: `gemini_session`.
+- Identified Cluster Resources via Slurm:
+  - 3 Compute Nodes: x24b200v4-nodes3-[0-2]
+  - GPUs: 8x NVIDIA B200 per node (Total: 24 GPUs)
+  - VRAM: 180 GB HBM3e per GPU (Total: 4.3 TB Cluster VRAM)
+  - CPU RAM: 394 GB per node.
+
+## 3. 1 Trillion (1T) Parameter MoE Analysis
+### Memory Requirements:
+- **Full BF16 (No Optimization):** ~16.4 TB (Impossible).
+- **ZeRO-3 + BF16:** ~666 GB per GPU (Impossible).
+- **QLoRA (4-bit) + ZeRO-3 + Expert Parallelism:** ~1.4 TB Total (~58 GB per GPU).
+- **Verdict:** Highly Feasible on 24x B200 GPUs.
+
+### Compute Requirements:
+- **Active Parameters per Token:** ~150B (typical for 1T MoE).
+- **Throughput Estimate:** ~48,000 tokens/sec (BF16) or ~85k+ tokens/sec (FP8).
+- **Training Time:** ~2.4 days for 10 Billion tokens.
+
+## 4. Accuracy & Optimization Strategy
+- **Quantization:** Recommended NF4 (NormalFloat4) with Double Quantization.
+- **Sensitive Layers:** Keep Router, LayerNorm, and Embeddings in BF16/FP32 to maintain >99.5% accuracy.
+- **Fine-Tuning:** Recommended LoRA with Rank >= 64 targeting all linear layers.
+
+## 5. NVIDIA NeMo Framework Strategy
+- **AutoModel:** Recommended `MegatronGPTModel` with 3D Parallelism.
+- **Parallelism Strategy:**
+  - Tensor Parallel (TP): 8 (Full Node)
+  - Pipeline Parallel (PP): 3 (Across Nodes)
+  - Expert Parallel (EP): 24 (Across Cluster)
+- **Precision:** Recommended FP8 via Transformer Engine for 2x throughput on B200.
+
+## 6. Session Management
+- **tmux:** Prefix `Ctrl+b` then `d` to detach. `tmux attach -t gemini_session` to return.
+- **History:** This log file serves as a persistent record of the strategy.
