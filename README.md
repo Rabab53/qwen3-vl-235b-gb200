@@ -31,14 +31,22 @@ pip install --upgrade pip huggingface_hub vllm==0.19.0
 ```
 
 ### 2. Model Download
-Use the provided `download_model.py` script for a stable, resumable download of the 439GB weights.
+Execute the provided `download_model.py` script on the login node (or any node with internet access) to download the 439GB model weights. The script supports resumable downloads and uses multiple workers for efficiency.
+
+```bash
+source qwen3-vl-env/bin/activate
+python3 download_model.py
+```
+
+The script performs the following operation:
 ```python
 from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id="Qwen/Qwen3-VL-235B-A22B-Instruct",
     local_dir="Qwen3-VL-235B",
     local_dir_use_symlinks=False,
-    resume_download=True
+    resume_download=True,
+    max_workers=8
 )
 ```
 
